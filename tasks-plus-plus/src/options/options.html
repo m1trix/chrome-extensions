@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tasks++ Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <h1>Tasks++ Options</h1>
+    <form id="options-form">
+      <label>
+        <input type="checkbox" name="enabled" />
+        Enable Tasks++
+      </label>
+      <label class="switch-row">
+        <span>
+          Compact tables
+          <small>Tighter rows and smaller buttons in the side panel.</small>
+        </span>
+        <input type="checkbox" name="compact" role="switch" class="switch" />
+      </label>
+      <div class="actions">
+        <button type="submit">Save</button>
+        <span id="status" class="status"></span>
+      </div>
+    </form>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,522 @@
+:root {
+  color-scheme: light dark;
+  --accent: #4f6bed;
+  --border: #e2e4ea;
+  --muted: #6b7080;
+  --success: #1f8a4c;
+  --warning: #b86e00;
+  --danger: #c6372e;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+
+/* Table density. Cozy (roomier) is the default; the "Compact tables" option
+   sets data-density="compact" on <html> for the tighter layout. */
+:root {
+  --cell-py: 10px;
+  --cell-px: 12px;
+  --summary-px: 10px;
+  --table-font: 13px;
+  --icon-size: 28px;
+  --actions-p: 6px 8px;
+  --input-cell-p: 8px;
+  --input-p: 5px 6px;
+  --empty-p: 14px;
+}
+
+:root[data-density='compact'] {
+  --cell-py: 6px;
+  --cell-px: 10px;
+  --summary-px: 6px;
+  --table-font: 12px;
+  --icon-size: 24px;
+  --actions-p: 4px 6px;
+  --input-cell-p: 4px 6px;
+  --input-p: 3px 4px;
+  --empty-p: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --border: #3a3d45;
+    --muted: #9aa0ad;
+    --success: #4cc27e;
+    --warning: #f0a83c;
+    --danger: #f0716a;
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  margin: 0;
+}
+
+header {
+  padding: 12px 16px 8px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.tabs {
+  display: flex;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs [role='tab'] {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tabs [role='tab']:hover {
+  background: transparent;
+  color: inherit;
+}
+
+.tabs [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* A tab name that a dragged row can be dropped on. */
+.tabs [role='tab'].drop-target {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  border-radius: 4px;
+}
+
+.tabs [role='tab']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+table {
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--table-font);
+}
+
+th,
+td {
+  padding: var(--cell-py) var(--cell-px);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  background: #000;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+tfoot td {
+  border-bottom: none;
+}
+
+td a {
+  color: #1a4fd6;
+  text-decoration: none;
+}
+
+td a:hover {
+  text-decoration: underline;
+}
+
+td a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+table.fill-title th.title {
+  width: 100%;
+}
+
+table.fill-title .input-row td.title input {
+  width: 100%;
+}
+
+table.fill-title td.title {
+  min-width: 10ch;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Keep branch names from crowding out the title; hover shows the full value. */
+table.fill-title th,
+table.fill-title td {
+  padding-inline: var(--summary-px);
+}
+
+table.fill-title td.mono {
+  max-width: 10ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow column holding just the copy button. */
+.empty-row td {
+  padding: var(--empty-p);
+  color: var(--muted);
+  font-style: italic;
+}
+
+th.copy-col,
+td.copy-col {
+  width: 1%;
+  padding-inline: 4px;
+  text-align: center;
+}
+
+th.check,
+td.check {
+  text-align: center;
+}
+
+/* Table checkboxes are drawn by hand so their background can be transparent. */
+td.check input {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1.5px solid var(--muted);
+  border-radius: 3px;
+  background: transparent;
+  vertical-align: middle;
+  appearance: none;
+  cursor: pointer;
+}
+
+td.check input:checked {
+  border-color: var(--accent);
+}
+
+td.check input:checked::after {
+  content: '';
+  position: absolute;
+  left: 3.5px;
+  top: 0.5px;
+  width: 3.5px;
+  height: 7px;
+  border: solid var(--accent);
+  border-width: 0 1.75px 1.75px 0;
+  transform: rotate(45deg);
+}
+
+td.check input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The actions column stays pinned to the right edge while the row scrolls. */
+th.actions,
+td.actions {
+  position: sticky;
+  right: 0;
+}
+
+td.actions {
+  background: Canvas;
+}
+
+td.actions {
+  padding: var(--actions-p);
+}
+
+/* Rows in In Progress (blue), Pending (orange), Complete (green) and
+   Abandoned (grey) alternate between two light colours. The colours are on the
+   cells (not the row) so the pinned actions cell matches, and text and icon
+   colours are fixed dark so they stay readable in dark mode too. */
+#panel-in-progress {
+  --row-odd: #c0e6f5;
+  --row-even: #94dcf8;
+  --row-border: #7cc4e0;
+}
+
+#panel-pending {
+  --row-odd: #fbe2d5;
+  --row-even: #f7c7ac;
+  --row-border: #eeb08e;
+}
+
+#panel-complete {
+  --row-odd: #daf2d0;
+  --row-even: #b5e6a2;
+  --row-border: #9fd48a;
+}
+
+#panel-abandoned {
+  --row-odd: #d0d0d0;
+  --row-even: #adadad;
+  --row-border: #9a9a9a;
+}
+
+[role="tabpanel"] tbody tr:not(.empty-row) td {
+  --muted: #3d5866;
+  --success: #1f7a45;
+  --warning: #9a5c00;
+  --danger: #b3261e;
+  --border: var(--row-border);
+  background: var(--row-odd);
+  color: #10242e;
+  color-scheme: light;
+}
+
+[role="tabpanel"] tbody tr:nth-child(even) td {
+  background: var(--row-even);
+}
+
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 20px;
+  margin: -2px 4px -2px -6px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  vertical-align: middle;
+  cursor: grab;
+  opacity: 0.6;
+  touch-action: none;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  background: transparent;
+  color: inherit;
+  opacity: 1;
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.drag-handle svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* Washed out but still opaque, so the pinned actions cell keeps covering
+   the content scrolling underneath it. */
+tr.dragging td {
+  filter: grayscale(0.7) brightness(1.12);
+}
+
+/* Line showing where a dragged row will land. */
+tr.drop-before td {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+tr.drop-after td {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.icon-button + .icon-button {
+  margin-left: 2px;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-button.done:hover {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
+}
+
+.icon-button.start:hover,
+.icon-button.pause:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.icon-button.abandon:hover {
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: var(--warning);
+}
+
+.icon-button.copy:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.icon-button.copy.copied {
+  color: var(--success);
+}
+
+.icon-button:disabled,
+.icon-button:disabled:hover {
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.35;
+  cursor: default;
+}
+
+.icon-button.delete:hover {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.add-button {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.add-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.input-row td {
+  padding: var(--input-cell-p);
+}
+
+.input-row input:not([type='checkbox']) {
+  box-sizing: border-box;
+  padding: var(--input-p);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: var(--table-font);
+}
+
+.input-row input:not(.mono) {
+  font-family: inherit;
+}
+
+.input-row input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.input-row input::placeholder {
+  color: var(--muted);
+}
+
+footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toggle input {
+  accent-color: var(--accent);
+}
+
+.status {
+  flex: 1;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+button {
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent);
+  color: #fff;
+}

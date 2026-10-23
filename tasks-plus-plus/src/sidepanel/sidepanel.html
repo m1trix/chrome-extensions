@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tasks++</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Tasks++</h1>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Task status">
+      <button type="button" role="tab" id="tab-pending" aria-controls="panel-pending" aria-selected="false" tabindex="-1">
+        Pending
+      </button>
+      <button type="button" role="tab" id="tab-in-progress" aria-controls="panel-in-progress" aria-selected="true">
+        In Progress
+      </button>
+      <button type="button" role="tab" id="tab-complete" aria-controls="panel-complete" aria-selected="false" tabindex="-1">
+        Complete
+      </button>
+      <button type="button" role="tab" id="tab-abandoned" aria-controls="panel-abandoned" aria-selected="false" tabindex="-1">
+        Abandoned
+      </button>
+    </nav>
+
+    <main>
+      <section role="tabpanel" id="panel-pending" aria-labelledby="tab-pending" tabindex="0" hidden>
+      </section>
+      <section role="tabpanel" id="panel-in-progress" aria-labelledby="tab-in-progress" tabindex="0">
+      </section>
+      <section role="tabpanel" id="panel-complete" aria-labelledby="tab-complete" tabindex="0" hidden>
+      </section>
+      <section role="tabpanel" id="panel-abandoned" aria-labelledby="tab-abandoned" tabindex="0" hidden>
+      </section>
+    </main>
+
+    <footer>
+      <label class="toggle">
+        <input type="checkbox" id="enabled" />
+        <span>Enabled</span>
+      </label>
+      <span id="status" class="status"></span>
+      <button id="open-options" type="button">Options</button>
+    </footer>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>
