@@ -49,6 +49,7 @@ const SUMMARY_COLUMNS = ['title', 'pr', 'branch', 'base'];
 
 // What each tab offers, keyed by status (the tab panel id without "panel-").
 // `columns` lists the column keys to show; omitted means all of them.
+// `editable` lists the columns whose value can be edited by clicking it.
 const DONE_ACTION = { key: 'done', label: 'Mark as done', icon: ICONS.check, run: (status, id) => moveTask(status, id, 'complete') };
 const START_ACTION = { key: 'start', label: 'Start (move to In Progress)', icon: ICONS.play, run: (status, id) => moveTask(status, id, 'in-progress') };
 const PAUSE_ACTION = { key: 'pause', label: 'Pause (move back to Pending)', icon: ICONS.pause, run: (status, id) => moveTask(status, id, 'pending') };
@@ -57,11 +58,13 @@ const ABANDON_ACTION = { key: 'abandon', label: 'Abandon', icon: ICONS.ban, run:
 const TAB_OPTIONS = {
   'in-progress': {
     inputRow: true,
+    editable: ['branch', 'base'],
     rowActions: [PAUSE_ACTION, DONE_ACTION, ABANDON_ACTION, DELETE_ACTION],
     emptyText: 'No tasks in progress. Add one below.',
   },
   pending: {
     inputRow: true,
+    editable: ['branch', 'base'],
     rowActions: [START_ACTION, ABANDON_ACTION, DELETE_ACTION],
     emptyText: 'No pending tasks. Add one below.',
   },
@@ -201,6 +204,56 @@ function createCopyButton(text, { label, ariaLabel, disabledLabel }) {
   return button;
 }
 
+// A task's value shown as a button that turns into an input when clicked.
+// Enter (or clicking away) saves, Escape cancels. Saving re-renders the table,
+// which also regenerates anything derived from the value (the rebase command).
+function createEditableValue(value, { ariaLabel, size, mono, onSave }) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'editable-value';
+  button.textContent = value;
+  button.title = value ? `${value} (click to edit)` : 'Click to edit';
+  button.setAttribute('aria-label', ariaLabel);
+  if (mono) button.classList.add('mono');
+
+  button.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.className = 'editable-value';
+    if (mono) input.classList.add('mono');
+    input.size = size;
+    input.value = value;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', ariaLabel);
+    input.dataset.controlId = button.dataset.controlId;
+
+    let finished = false;
+    function finish({ save, focus }) {
+      if (finished) return; // swapping the input out can fire blur again
+      finished = true;
+      const newValue = input.value.trim();
+      input.replaceWith(button);
+      if (focus) button.focus();
+      if (save && newValue !== value) onSave(newValue);
+    }
+
+    input.addEventListener('blur', () => finish({ save: true, focus: false }));
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault();
+        finish({ save: true, focus: true });
+      } else if (event.key === 'Escape') {
+        finish({ save: false, focus: true });
+      }
+    });
+
+    button.replaceWith(input);
+    input.focus();
+    input.select();
+  });
+  return button;
+}
+
 // Pasting a PR link into the PR input shows "#<number>" and keeps the
 // link in data-url. Editing the text afterwards drops the link.
 function setUpPrInput(input, draftUrl) {
@@ -319,7 +372,7 @@ const controlId = (taskId, key) => `${taskId}:${key}`;
 
 function renderTable(panel, tasks) {
   const status = statusOf(panel);
-  const { inputRow: hasInputRow, rowActions, columns: columnKeys, emptyText } = TAB_OPTIONS[status];
+  const { inputRow: hasInputRow, rowActions, columns: columnKeys, editable = [], emptyText } = TAB_OPTIONS[status];
   const columns = columnKeys ? COLUMNS.filter(({ key }) => columnKeys.includes(key)) : COLUMNS;
   const hasActions = hasInputRow || rowActions.length > 0;
 
@@ -359,7 +412,7 @@ function renderTable(panel, tasks) {
   const body = table.createTBody();
   for (const task of tasks) {
     const row = body.insertRow();
-    for (const { key, label, mono, checkbox, copy } of columns) {
+    for (const { key, label, size, mono, checkbox, copy } of columns) {
       const cell = row.insertCell();
       if (key === 'title') cell.classList.add('title');
       if (copy) {
@@ -385,6 +438,15 @@ function renderTable(panel, tasks) {
         link.textContent = task.pr;
         link.title = task.prUrl;
         cell.append(link);
+      } else if (editable.includes(key)) {
+        const value = createEditableValue(task[key] ?? '', {
+          ariaLabel: `${label} for ${task.title}`,
+          size,
+          mono,
+          onSave: (newValue) => updateTask(status, task.id, { [key]: newValue }),
+        });
+        value.dataset.controlId = controlId(task.id, key);
+        cell.append(value);
       } else {
         cell.textContent = task[key] ?? '';
         if (mono) {
