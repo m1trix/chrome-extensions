@@ -141,13 +141,14 @@ async function moveTask(from, id, to, toIndex = Infinity) {
   });
 }
 
-// Recognises a GitHub pull request link, e.g. https://github.com/me/repo/pull/11/files,
-// and returns its number and canonical URL (https://github.com/me/repo/pull/11).
+// Recognises a pull request link on github.com or any GitHub Enterprise host, e.g.
+// https://github.example.com/me/repo/pull/11/files, and returns its number and
+// canonical URL (https://github.example.com/me/repo/pull/11).
 function parsePrUrl(text) {
-  const match = text.trim().match(/^https?:\/\/(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+)\/pull\/(\d+)(?:[/?#].*)?$/i);
+  const match = text.trim().match(/^(https?):\/\/(?:www\.)?([^/?#\s]+)\/([\w.-]+)\/([\w.-]+)\/pull\/(\d+)(?:[/?#].*)?$/i);
   if (!match) return null;
-  const [, owner, repo, number] = match;
-  return { number, url: `https://github.com/${owner}/${repo}/pull/${number}` };
+  const [, scheme, host, owner, repo, number] = match;
+  return { number, url: `${scheme.toLowerCase()}://${host.toLowerCase()}/${owner}/${repo}/pull/${number}` };
 }
 
 function createCheckbox(checked, ariaLabel) {
@@ -200,7 +201,7 @@ function createCopyButton(text, { label, ariaLabel, disabledLabel }) {
   return button;
 }
 
-// Pasting a GitHub PR link into the PR input shows "#<number>" and keeps the
+// Pasting a PR link into the PR input shows "#<number>" and keeps the
 // link in data-url. Editing the text afterwards drops the link.
 function setUpPrInput(input, draftUrl) {
   if (draftUrl) input.dataset.url = draftUrl;
