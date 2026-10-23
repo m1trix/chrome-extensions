@@ -17,10 +17,6 @@ form {
   gap: 16px;
 }
 
-input[type='checkbox'] {
-  accent-color: var(--accent);
-}
-
 .switch-row {
   display: flex;
   align-items: center;
@@ -97,6 +93,12 @@ button {
   background: var(--accent);
   color: #fff;
   cursor: pointer;
+}
+
+button.secondary {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
 }
 
 .status {

@@ -8,9 +8,9 @@
   <body>
     <h1>Tasks++ Options</h1>
     <form id="options-form">
-      <label>
-        <input type="checkbox" name="enabled" />
-        Enable Tasks++
+      <label class="switch-row">
+        <span>Enable Tasks++</span>
+        <input type="checkbox" name="enabled" role="switch" class="switch" />
       </label>
       <label class="switch-row">
         <span>
@@ -21,6 +21,9 @@
       </label>
       <div class="actions">
         <button type="submit">Save</button>
+        <button type="button" id="export" class="secondary">Export</button>
+        <button type="button" id="import" class="secondary">Import</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden />
         <span id="status" class="status"></span>
       </div>
     </form>
