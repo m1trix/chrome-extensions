@@ -58,13 +58,13 @@ const ABANDON_ACTION = { key: 'abandon', label: 'Abandon', icon: ICONS.ban, run:
 const TAB_OPTIONS = {
   'in-progress': {
     inputRow: true,
-    editable: ['branch', 'base'],
+    editable: ['title', 'branch', 'base'],
     rowActions: [PAUSE_ACTION, DONE_ACTION, ABANDON_ACTION, DELETE_ACTION],
     emptyText: 'No tasks in progress. Add one below.',
   },
   pending: {
     inputRow: true,
-    editable: ['branch', 'base'],
+    editable: ['title', 'branch', 'base'],
     rowActions: [START_ACTION, ABANDON_ACTION, DELETE_ACTION],
     emptyText: 'No pending tasks. Add one below.',
   },
@@ -207,7 +207,8 @@ function createCopyButton(text, { label, ariaLabel, disabledLabel }) {
 // A task's value shown as a button that turns into an input when clicked.
 // Enter (or clicking away) saves, Escape cancels. Saving re-renders the table,
 // which also regenerates anything derived from the value (the rebase command).
-function createEditableValue(value, { ariaLabel, size, mono, onSave }) {
+// A required value that is cleared is not saved.
+function createEditableValue(value, { ariaLabel, size, mono, required, onSave }) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'editable-value';
@@ -234,7 +235,7 @@ function createEditableValue(value, { ariaLabel, size, mono, onSave }) {
       const newValue = input.value.trim();
       input.replaceWith(button);
       if (focus) button.focus();
-      if (save && newValue !== value) onSave(newValue);
+      if (save && newValue !== value && (newValue || !required)) onSave(newValue);
     }
 
     input.addEventListener('blur', () => finish({ save: true, focus: false }));
@@ -443,6 +444,7 @@ function renderTable(panel, tasks) {
           ariaLabel: `${label} for ${task.title}`,
           size,
           mono,
+          required: key === 'title',
           onSave: (newValue) => updateTask(status, task.id, { [key]: newValue }),
         });
         value.dataset.controlId = controlId(task.id, key);

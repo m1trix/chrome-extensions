@@ -703,6 +703,15 @@ td .editable-value {
   cursor: text;
 }
 
+td .editable-value:not(.mono) {
+  font-family: inherit;
+}
+
+/* Sits right after the drag handle, so it can't extend as far left. */
+td.title .editable-value {
+  margin-left: -4px;
+}
+
 td button.editable-value {
   min-height: calc(1lh + 6px);
   vertical-align: middle;
