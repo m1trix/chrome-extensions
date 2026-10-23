@@ -79,9 +79,12 @@ const TAB_OPTIONS = {
   },
 };
 
-// Tasks are stored per status, e.g. under "tasks:in-progress".
+// Tasks are stored per topic and status, e.g. under "tasks:<topic id>:in-progress".
+// Unless given, the topic is the one this panel is showing.
+const STATUSES = Object.keys(TAB_OPTIONS);
+let currentTopic; // id of the topic shown in this panel, set before the first render
 const statusOf = (panel) => panel.id.replace(/^panel-/, '');
-const storageKey = (status) => `tasks:${status}`;
+const storageKey = (status, topic = currentTopic) => `tasks:${topic}:${status}`;
 
 async function loadTasks(status) {
   const key = storageKey(status);
@@ -516,6 +519,246 @@ function renderTable(panel, tasks) {
 }
 
 const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+
+// Topics: each topic has its own tasks in all four tabs. The list of topics
+// ({ id, name }) is stored under "topics" and the last selected one under
+// "activeTopic". There is always at least one topic.
+let topics = [];
+
+async function loadTopics() {
+  const { topics: stored } = await chrome.storage.local.get({ topics: [] });
+  if (stored.length) return stored;
+
+  // First run with topics: tasks saved before topics existed go into "General".
+  const topic = { id: crypto.randomUUID(), name: 'General' };
+  const legacyKey = (status) => `tasks:${status}`;
+  const legacy = await chrome.storage.local.get(STATUSES.map(legacyKey));
+  await chrome.storage.local.set({
+    topics: [topic],
+    ...Object.fromEntries(
+      STATUSES.filter((status) => legacy[legacyKey(status)]).map((status) => [
+        storageKey(status, topic.id),
+        legacy[legacyKey(status)],
+      ]),
+    ),
+  });
+  await chrome.storage.local.remove(STATUSES.map(legacyKey));
+  return [topic];
+}
+
+async function loadTopicTasks(topic) {
+  const keys = STATUSES.map((status) => storageKey(status, topic));
+  const stored = await chrome.storage.local.get(keys);
+  return Object.fromEntries(STATUSES.map((status, i) => [status, stored[keys[i]] ?? []]));
+}
+
+const topicBar = document.getElementById('topic-bar');
+const topicName = document.getElementById('topic-name');
+const topicRename = document.getElementById('topic-rename');
+const switchTopicButton = document.getElementById('switch-topic');
+const topicMenu = document.getElementById('topic-menu');
+const newTopicButton = document.getElementById('new-topic');
+const newTopicForm = document.getElementById('new-topic-form');
+const newTopicName = document.getElementById('new-topic-name');
+const deleteTopicButton = document.getElementById('delete-topic');
+const deleteTopicDialog = document.getElementById('delete-topic-dialog');
+
+const topicById = (id) => topics.find((topic) => topic.id === id);
+
+// Topic names are unique, ignoring case. `except` is the topic being renamed.
+const isNameTaken = (name, except) =>
+  topics.some((topic) => topic.id !== except && topic.name.toLowerCase() === name.toLowerCase());
+
+function renderTopics() {
+  topicName.textContent = topicById(currentTopic)?.name ?? '';
+  const single = topics.length < 2;
+  switchTopicButton.disabled = single;
+  switchTopicButton.title = single ? 'No other topics yet' : 'Switch to another topic';
+  deleteTopicButton.disabled = single;
+  deleteTopicButton.title = single ? 'The only topic can’t be deleted' : 'Delete this topic and its tasks';
+
+  topicMenu.replaceChildren(
+    ...topics.map(({ id, name }) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.role = 'menuitemradio';
+      item.textContent = name;
+      item.setAttribute('aria-checked', String(id === currentTopic));
+      item.addEventListener('click', () => {
+        topicMenu.hidePopover();
+        if (id !== currentTopic) switchTopic(id);
+      });
+      return item;
+    }),
+  );
+}
+
+async function switchTopic(id) {
+  if (!topicRename.hidden) editTopicName(false); // drop an unsaved rename of the old topic
+  currentTopic = id;
+  renderTopics();
+  chrome.storage.local.set({ activeTopic: id });
+  const tasks = await loadTopicTasks(id);
+  if (currentTopic !== id) return; // switched again while loading
+  for (const panel of panels) {
+    panel.replaceChildren(); // don't carry a half-typed task over to the other topic
+    renderTable(panel, tasks[statusOf(panel)]);
+  }
+}
+
+async function createTopic(name) {
+  const { topics: stored } = await chrome.storage.local.get({ topics: [] });
+  const topic = { id: crypto.randomUUID(), name };
+  await chrome.storage.local.set({ topics: [...stored, topic] });
+  await switchTopic(topic.id);
+}
+
+async function renameTopic(id, name) {
+  const { topics: stored } = await chrome.storage.local.get({ topics: [] });
+  await chrome.storage.local.set({ topics: stored.map((topic) => (topic.id === id ? { ...topic, name } : topic)) });
+}
+
+// Removes the topic and its tasks. If a panel is showing it, the topics
+// listener below moves that panel to a neighbouring topic.
+async function deleteTopic(id) {
+  const { topics: stored } = await chrome.storage.local.get({ topics: [] });
+  const remaining = stored.filter((topic) => topic.id !== id);
+  if (remaining.length === 0) return;
+  await chrome.storage.local.set({ topics: remaining });
+  await chrome.storage.local.remove(STATUSES.map((status) => storageKey(status, id)));
+}
+
+// Rename: clicking the topic title turns it into an input. Enter (or clicking
+// away) saves, Escape cancels. An empty or already used name isn't saved.
+function editTopicName(editing, { focus = false } = {}) {
+  topicName.hidden = editing;
+  topicRename.hidden = !editing;
+  topicRename.setCustomValidity('');
+  if (editing) {
+    topicRename.value = topicById(currentTopic).name;
+    topicRename.focus();
+    topicRename.select();
+  } else if (focus) {
+    topicName.focus();
+  }
+}
+
+async function commitTopicName({ focus = false } = {}) {
+  if (topicRename.hidden) return; // already saved or cancelled
+  const id = currentTopic;
+  const name = topicRename.value.trim();
+  const changed = name && name !== topicById(id).name;
+  if (changed && isNameTaken(name, id) && focus) {
+    topicRename.setCustomValidity(`A topic named “${name}” already exists.`);
+    topicRename.reportValidity();
+    return;
+  }
+  editTopicName(false, { focus });
+  if (changed && !isNameTaken(name, id)) await renameTopic(id, name);
+}
+
+topicName.addEventListener('click', () => editTopicName(true));
+topicRename.addEventListener('input', () => topicRename.setCustomValidity(''));
+topicRename.addEventListener('blur', () => commitTopicName());
+topicRename.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.isComposing) {
+    event.preventDefault();
+    commitTopicName({ focus: true });
+  } else if (event.key === 'Escape') {
+    editTopicName(false, { focus: true });
+  }
+});
+
+// Switch: a menu of topics under the Switch button (a popover, so clicking
+// outside or pressing Escape closes it). Arrow keys move between topics.
+topicMenu.addEventListener('toggle', (event) => {
+  if (event.newState !== 'open') return;
+  const button = switchTopicButton.getBoundingClientRect();
+  topicMenu.style.top = `${button.bottom + 4}px`;
+  topicMenu.style.left = `${Math.max(8, button.right - topicMenu.offsetWidth)}px`;
+  topicMenu.querySelector('[aria-checked="true"]')?.focus();
+});
+
+topicMenu.addEventListener('keydown', (event) => {
+  const items = [...topicMenu.children];
+  const index = items.indexOf(document.activeElement);
+  const next = {
+    ArrowDown: items[(index + 1) % items.length],
+    ArrowUp: items[(index - 1 + items.length) % items.length],
+    Home: items[0],
+    End: items.at(-1),
+  }[event.key];
+  if (next) {
+    event.preventDefault();
+    next.focus();
+  }
+});
+
+// New: swaps the topic bar for a name input. Enter creates, Escape cancels.
+function showNewTopicForm(show) {
+  topicBar.hidden = show;
+  newTopicForm.hidden = !show;
+  newTopicName.value = '';
+  newTopicName.setCustomValidity('');
+  (show ? newTopicName : newTopicButton).focus();
+}
+
+newTopicButton.addEventListener('click', () => showNewTopicForm(true));
+document.getElementById('cancel-new-topic').addEventListener('click', () => showNewTopicForm(false));
+newTopicForm.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') showNewTopicForm(false);
+});
+newTopicName.addEventListener('input', () => newTopicName.setCustomValidity(''));
+
+newTopicForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const name = newTopicName.value.trim();
+  if (!name) {
+    newTopicName.focus();
+    return;
+  }
+  if (isNameTaken(name)) {
+    newTopicName.setCustomValidity(`A topic named “${name}” already exists.`);
+    newTopicName.reportValidity();
+    return;
+  }
+  showNewTopicForm(false);
+  await createTopic(name);
+});
+
+// Delete: asks first, saying how many tasks go with the topic.
+deleteTopicButton.addEventListener('click', async () => {
+  const topic = topicById(currentTopic);
+  const count = Object.values(await loadTopicTasks(topic.id)).reduce((sum, tasks) => sum + tasks.length, 0);
+  document.getElementById('delete-topic-message').textContent =
+    count === 0
+      ? `Delete the topic “${topic.name}”?`
+      : `Delete the topic “${topic.name}” and its ${count} task${count === 1 ? '' : 's'}?`;
+  deleteTopicDialog.returnValue = '';
+  deleteTopicDialog.dataset.topic = topic.id;
+  deleteTopicDialog.showModal();
+});
+
+deleteTopicDialog.addEventListener('close', () => {
+  if (deleteTopicDialog.returnValue === 'delete') deleteTopic(deleteTopicDialog.dataset.topic);
+});
+
+// Keep the topic list in step with other windows, and leave a topic that was deleted.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' || !changes.topics) return;
+  const oldTopics = changes.topics.oldValue ?? [];
+  topics = changes.topics.newValue ?? [];
+  renderTopics();
+  if (topics.length && !topics.some(({ id }) => id === currentTopic)) {
+    const index = oldTopics.findIndex(({ id }) => id === currentTopic);
+    switchTopic(topics[Math.min(Math.max(index, 0), topics.length - 1)].id);
+  }
+});
+
+topics = await loadTopics();
+const { activeTopic } = await chrome.storage.local.get('activeTopic');
+currentTopic = topics.some(({ id }) => id === activeTopic) ? activeTopic : topics[0].id;
+renderTopics();
 
 for (const panel of panels) {
   renderTable(panel, await loadTasks(statusOf(panel)));

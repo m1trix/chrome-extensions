@@ -8,7 +8,33 @@
   <body>
     <header>
       <h1>Tasks++</h1>
+      <div class="topic-bar" id="topic-bar">
+        <h2 class="topic-title">
+          <button type="button" id="topic-name" title="Click to rename"></button>
+          <input id="topic-rename" aria-label="Topic name" autocomplete="off" spellcheck="false" maxlength="60" hidden />
+        </h2>
+        <button type="button" id="switch-topic" popovertarget="topic-menu" aria-haspopup="menu">Switch</button>
+        <button type="button" id="new-topic" title="Create a topic">New</button>
+        <button type="button" id="delete-topic" class="danger">Delete</button>
+      </div>
+      <form class="topic-bar" id="new-topic-form" hidden>
+        <input id="new-topic-name" placeholder="Topic name" aria-label="New topic name" autocomplete="off" maxlength="60" required />
+        <button type="submit">Create</button>
+        <button type="button" id="cancel-new-topic">Cancel</button>
+      </form>
     </header>
+
+    <div id="topic-menu" class="topic-menu" popover role="menu" aria-label="Topics"></div>
+
+    <dialog id="delete-topic-dialog">
+      <form method="dialog">
+        <p id="delete-topic-message"></p>
+        <div class="dialog-actions">
+          <button value="cancel" autofocus>Cancel</button>
+          <button value="delete" class="danger">Delete</button>
+        </div>
+      </form>
+    </dialog>
 
     <nav class="tabs" role="tablist" aria-label="Task status">
       <button type="button" role="tab" id="tab-pending" aria-controls="panel-pending" aria-selected="false" tabindex="-1">
