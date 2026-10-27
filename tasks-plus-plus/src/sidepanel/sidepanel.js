@@ -20,9 +20,12 @@ connectToWorker();
 // show fewer columns, giving the title more room.
 const COLUMNS = [
   { key: 'title', label: 'TITLE', size: 20, placeholder: 'Add a task…' },
-  { key: 'pr', label: 'PR', size: 6 },
-  { key: 'branch', label: 'BRANCH', size: 16, mono: true },
-  { key: 'base', label: 'BASE', size: 8, mono: true },
+  // `copyable`: the value is followed by a button that copies the task's
+  // `field` (default: the column's own value), named `label` in its tooltip.
+  // `link` copies it as a link with the column's value as its text.
+  { key: 'pr', label: 'PR', size: 6, copyable: { field: 'prUrl', label: 'PR link', link: true } },
+  { key: 'branch', label: 'BRANCH', size: 16, mono: true, copyable: { label: 'branch' } },
+  { key: 'base', label: 'BASE', size: 8, mono: true, copyable: { label: 'base' } },
   { key: 'sr', label: 'SR', checkbox: true },
   { key: 'mt', label: 'MT', checkbox: true },
   { key: 'cr', label: 'CR', checkbox: true },
@@ -154,6 +157,14 @@ function parsePrUrl(text) {
   return { number, url: `${scheme.toLowerCase()}://${host.toLowerCase()}/${owner}/${repo}/pull/${number}` };
 }
 
+function escapeHtml(text) {
+  const span = document.createElement('span');
+  span.textContent = text;
+  return span.innerHTML.replaceAll('"', '&quot;');
+}
+
+const linkHtml = (url, text) => `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`;
+
 function createCheckbox(checked, ariaLabel) {
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
@@ -173,8 +184,9 @@ function createIconButton({ key, label, icon }, ariaLabel = label) {
 }
 
 // A button that copies `text` to the clipboard and briefly shows a check mark.
+// With `html` too, rich-text editors paste that instead (e.g. a link).
 // Without text (e.g. a task with no branch or base) it is disabled.
-function createCopyButton(text, { label, ariaLabel, disabledLabel }) {
+function createCopyButton(text, { label, ariaLabel, disabledLabel, html }) {
   const button = createIconButton({ key: 'copy', label, icon: ICONS.copy }, ariaLabel);
   if (!text) {
     button.disabled = true;
@@ -185,7 +197,16 @@ function createCopyButton(text, { label, ariaLabel, disabledLabel }) {
   let resetTimer;
   button.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      if (html) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([text], { type: 'text/plain' }),
+            'text/html': new Blob([html], { type: 'text/html' }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
     } catch (error) {
       console.error('[Tasks++] copy failed', error);
       button.title = 'Copy failed';
@@ -413,7 +434,7 @@ function renderTable(panel, tasks) {
   const body = table.createTBody();
   for (const task of tasks) {
     const row = body.insertRow();
-    for (const { key, label, size, mono, checkbox, copy } of columns) {
+    for (const { key, label, size, mono, checkbox, copy, copyable } of columns) {
       const cell = row.insertCell();
       if (key === 'title') cell.classList.add('title');
       if (copy) {
@@ -449,12 +470,27 @@ function renderTable(panel, tasks) {
         });
         value.dataset.controlId = controlId(task.id, key);
         cell.append(value);
+      } else if (mono) {
+        // In a span, so truncating a long value doesn't hide its copy button.
+        const text = document.createElement('span');
+        text.className = 'value mono';
+        text.textContent = task[key] ?? '';
+        text.title = text.textContent; // full value on hover when truncated
+        cell.append(text);
       } else {
         cell.textContent = task[key] ?? '';
-        if (mono) {
-          cell.classList.add('mono');
-          cell.title = cell.textContent; // full value on hover when truncated
-        }
+      }
+
+      const copyText = copyable && task[copyable.field ?? key];
+      if (copyText) {
+        const button = createCopyButton(copyText, {
+          label: `Copy ${copyable.label}`,
+          ariaLabel: `Copy ${copyable.label} for ${task.title}`,
+          html: copyable.link ? linkHtml(copyText, task[key] || copyText) : undefined,
+        });
+        button.classList.add('copy-value');
+        button.dataset.controlId = controlId(task.id, `copy-${key}`);
+        cell.append(button);
       }
 
       if (key === 'title') {

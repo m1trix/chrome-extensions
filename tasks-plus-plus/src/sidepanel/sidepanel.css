@@ -355,19 +355,37 @@ table.fill-title td {
   padding-inline: var(--summary-px);
 }
 
-table.fill-title td.mono {
+table.fill-title td .value.mono {
+  display: inline-block;
   max-width: 10ch;
   overflow: hidden;
   text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
-/* Narrow column holding just the copy button. */
+/* Copy button right after a branch name; smaller so rows keep their height. */
+td .icon-button.copy-value {
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+}
+
+td .editable-value + .icon-button.copy-value {
+  margin-left: 10px; /* clears the value's negative margin */
+}
+
+td .icon-button.copy-value svg {
+  width: 14px;
+  height: 14px;
+}
+
 .empty-row td {
   padding: var(--empty-p);
   color: var(--muted);
   font-style: italic;
 }
 
+/* Narrow column holding just the copy button. */
 th.copy-col,
 td.copy-col {
   width: 1%;
