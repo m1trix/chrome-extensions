@@ -970,6 +970,79 @@ document.getElementById('open-options').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 
+// Export: downloads everything the extension stores (settings in sync storage,
+// tasks and topics in local storage) as a JSON file.
+document.getElementById('export-state').addEventListener('click', async () => {
+  const state = {
+    exportedAt: new Date().toISOString(),
+    version: chrome.runtime.getManifest().version,
+    sync: await chrome.storage.sync.get(null),
+    local: await chrome.storage.local.get(null),
+  };
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `tasks-plus-plus-${state.exportedAt.slice(0, 10)}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 0);
+  statusEl.textContent = 'Exported.';
+});
+
+// Replaces everything stored in `area` with `items`. New values are written
+// before stale keys are removed, so a failure never leaves the area empty.
+async function replaceArea(area, items) {
+  const staleKeys = Object.keys(await area.get(null)).filter((key) => !(key in items));
+  await area.set(items);
+  await area.remove(staleKeys);
+}
+
+// Import: picks a file written by Export and, once confirmed, replaces all
+// current state with it, then reloads the panel to show it.
+const importFile = document.getElementById('import-file');
+const importDialog = document.getElementById('import-dialog');
+let pendingImport; // { name, state } while the dialog is open
+
+document.getElementById('import-state').addEventListener('click', () => importFile.click());
+
+importFile.addEventListener('change', async () => {
+  const [file] = importFile.files;
+  importFile.value = ''; // so picking the same file again still fires 'change'
+  if (!file) return;
+
+  let state;
+  try {
+    state = JSON.parse(await file.text());
+  } catch {
+    statusEl.textContent = 'Import failed: not a JSON file.';
+    return;
+  }
+  const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (!isObject(state) || !isObject(state.sync) || !isObject(state.local)) {
+    statusEl.textContent = 'Import failed: not a Tasks++ export.';
+    return;
+  }
+  pendingImport = { name: file.name, state };
+  document.getElementById('import-message').textContent =
+    `Replace all Tasks++ settings, tasks and topics with the contents of ${file.name}?`;
+  importDialog.returnValue = '';
+  importDialog.showModal();
+});
+
+importDialog.addEventListener('close', async () => {
+  const { state } = pendingImport;
+  pendingImport = undefined;
+  if (importDialog.returnValue !== 'import') return;
+  try {
+    await replaceArea(chrome.storage.sync, state.sync);
+    await replaceArea(chrome.storage.local, state.local);
+  } catch (error) {
+    console.error('[Tasks++] import failed', error);
+    statusEl.textContent = `Import failed: ${error.message}`;
+    return;
+  }
+  location.reload();
+});
+
 const response = await chrome.runtime.sendMessage({ type: 'PING' });
 if (response?.type === 'PONG') {
   statusEl.textContent = 'Background connected.';
