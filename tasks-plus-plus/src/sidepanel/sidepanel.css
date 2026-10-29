@@ -585,7 +585,11 @@ tr.drop-after td {
 }
 
 .icon-button.start:hover,
-.icon-button.pause:hover {
+.icon-button.pause:hover,
+.icon-button.switch:hover,
+.icon-button.new:hover,
+.icon-button.export:hover,
+.icon-button.import:hover {
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
 }

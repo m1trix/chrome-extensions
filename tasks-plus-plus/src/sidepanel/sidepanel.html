@@ -13,9 +13,22 @@
           <button type="button" id="topic-name" title="Click to rename"></button>
           <input id="topic-rename" aria-label="Topic name" autocomplete="off" spellcheck="false" maxlength="60" hidden />
         </h2>
-        <button type="button" id="switch-topic" popovertarget="topic-menu" aria-haspopup="menu">Switch</button>
-        <button type="button" id="new-topic" title="Create a topic">New</button>
-        <button type="button" id="delete-topic" class="danger">Delete</button>
+        <button type="button" id="switch-topic" class="icon-button switch" popovertarget="topic-menu" aria-haspopup="menu" aria-label="Switch topic">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5h10M10 3l2.5 2.5L10 8M13.5 10.5h-10M6 8l-2.5 2.5L6 13" /></svg>
+        </button>
+        <button type="button" id="new-topic" class="icon-button new" title="Create a topic" aria-label="New topic">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>
+        </button>
+        <button type="button" id="export-state" class="icon-button export" title="Export all topics, tasks and settings" aria-label="Export">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10V2.5M5 5.5l3-3 3 3M2.5 10v2a1.5 1.5 0 0 0 1.5 1.5h8a1.5 1.5 0 0 0 1.5-1.5v-2" /></svg>
+        </button>
+        <button type="button" id="import-state" class="icon-button import" title="Import topics, tasks and settings from an export" aria-label="Import">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5V10M5 7l3 3 3-3M2.5 10v2a1.5 1.5 0 0 0 1.5 1.5h8a1.5 1.5 0 0 0 1.5-1.5v-2" /></svg>
+        </button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden />
+        <button type="button" id="delete-topic" class="icon-button delete" aria-label="Delete topic">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M6.5 4.5V3a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1.5M4 4.5l.7 8.6a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9l.7-8.6M6.75 7v4.5M9.25 7v4.5" /></svg>
+        </button>
       </div>
       <form class="topic-bar" id="new-topic-form" hidden>
         <input id="new-topic-name" placeholder="Topic name" aria-label="New topic name" autocomplete="off" maxlength="60" required />
@@ -32,6 +45,16 @@
         <div class="dialog-actions">
           <button value="cancel" autofocus>Cancel</button>
           <button value="delete" class="danger">Delete</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog">
+      <form method="dialog">
+        <p id="import-message"></p>
+        <div class="dialog-actions">
+          <button value="cancel" autofocus>Cancel</button>
+          <button value="import" class="danger">Replace</button>
         </div>
       </form>
     </dialog>
