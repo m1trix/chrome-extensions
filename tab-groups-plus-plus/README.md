@@ -172,11 +172,21 @@ popup/               Toolbar popup and side panel (“This window”, “Saved�
 import/              Import page (file pickers can't live in the popup)
 icons/               icon.svg (source) and the PNGs generated from it
 scripts/             build-icons.mjs: regenerates the PNG icons from icon.svg
+tests/               Playwright tests of the popup, run against a fake `chrome` API (tests/fake-chrome.js)
 ```
 
 ### Reloading after changes
 
 After you edit files, click the reload icon on the extension card. To reopen the popup, close it and open it again.
+
+### Tests
+
+The popup's tests run with [Playwright](https://playwright.dev) in a normal browser page, with the `chrome`
+API faked in memory. This installs what they need on the first run:
+
+```sh
+./run-tests.sh
+```
 
 ### Icons
 
@@ -193,7 +203,8 @@ Zip the folder contents (without `.git`) to upload to the Chrome Web Store or
 [Microsoft Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge/) (same zip for both):
 
 ```sh
-zip -r tab-groups-plus.zip . -x '.git/*' '.claude/*' 'scripts/*' '*.DS_Store'
+zip -r tab-groups-plus.zip . -x '.git/*' '.claude/*' 'scripts/*' 'tests/*' 'node_modules/*' 'test-results/*' \
+  'playwright-report/*' package.json package-lock.json playwright.config.js run-tests.sh '*.DS_Store'
 ```
 
 ---

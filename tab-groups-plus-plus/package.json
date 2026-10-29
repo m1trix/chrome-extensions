@@ -1,0 +1,13 @@
+{
+  "name": "tab-groups-plus-plus",
+  "version": "1.3.0",
+  "private": true,
+  "description": "Tab Groups++ Chrome/Edge extension",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}
