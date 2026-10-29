@@ -5,6 +5,10 @@
   "description": "Tasks++ Chrome/Edge extension",
   "type": "module",
   "scripts": {
-    "package": "rm -f tasks-plus-plus.zip && zip -r tasks-plus-plus.zip manifest.json icons src -x '*.DS_Store'"
+    "package": "rm -f tasks-plus-plus.zip && zip -r tasks-plus-plus.zip manifest.json icons src -x '*.DS_Store'",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }
